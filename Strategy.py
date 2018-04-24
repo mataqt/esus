@@ -228,7 +228,7 @@ try:
     strategyName = 'dummy'    
 #
     startDate = datetime(2018, 1, 11)
-    endDate = datetime(2018, 1, 11)
+    endDate = datetime(2018, 1, 25)
     
     myStrategy = cStrategy( myHistData,
                              modelType,

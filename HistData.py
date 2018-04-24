@@ -260,28 +260,47 @@ class cHistTennisData(cHistData):
         maxL = probasL.min( axis = 1, skipna = True )
         averageL = probasL.mean( axis = 1, skipna = True )
 
-        spreadCorrection = ( ( averageL + averageW ) -1.0 ) / 2.0
-        averageL_corrected = averageL - spreadCorrection
-        averageW_corrected = averageW - spreadCorrection
+#        spreadCorrection = ( ( averageL + averageW ) -1.0 ) / 2.0
+#        spreadCorrection2 = ( ( probasL + probasW ) -1.0 ) / 2.0
+#
+#        averageL_corrected = averageL - spreadCorrection
+#        averageW_corrected = averageW - spreadCorrection
         
         cols = ['probaW1', 'probaW2', 'probaW3','probaW4','probaW5']
         df_excel[cols] = probasW
         cols = ['probaL1', 'probaL2', 'probaL3','probaL4','probaL5']
         df_excel[cols] = probasL
+        
+        df_excel['spread_proba1'] = ( df_excel['probaW1'] + df_excel['probaL1'] -1.0 ) / 2.0
+        df_excel['spread_proba2'] = ( df_excel['probaW2'] + df_excel['probaL2'] -1.0 ) / 2.0
+        df_excel['spread_proba3'] = ( df_excel['probaW3'] + df_excel['probaL3'] -1.0 ) / 2.0
+        df_excel['spread_proba4'] = ( df_excel['probaW4'] + df_excel['probaL4'] -1.0 ) / 2.0
+        df_excel['spread_proba5'] = ( df_excel['probaW5'] + df_excel['probaL5'] -1.0 ) / 2.0
+
+
                 
         df_excel['probaMaxW'] = maxW
         df_excel['probaMaxL'] = maxL
                 
         df_excel['probaAvgW'] = averageW
         df_excel['probaAvgL'] = averageL
-        df_excel['probaAvgW_corrected'] = averageW_corrected
-        df_excel['probaAvgL_corrected'] = averageL_corrected
- 
+
+        df_excel['diff_probaW1'] = ( df_excel['probaW1'] - df_excel['probaAvgW']  ) 
+        df_excel['diff_probaW2'] = ( df_excel['probaW2'] - df_excel['probaAvgW']  ) 
+        df_excel['diff_probaW3'] = ( df_excel['probaW3'] - df_excel['probaAvgW']  ) 
+        df_excel['diff_probaW4'] = ( df_excel['probaW4'] - df_excel['probaAvgW']  ) 
+        df_excel['diff_probaW5'] = ( df_excel['probaW5'] - df_excel['probaAvgW']  ) 
+
+        df_excel['diff_probaL1'] = ( df_excel['probaL1'] - df_excel['probaAvgL']  ) 
+        df_excel['diff_probaL2'] = ( df_excel['probaL2'] - df_excel['probaAvgL']  ) 
+        df_excel['diff_probaL3'] = ( df_excel['probaL3'] - df_excel['probaAvgL']  ) 
+        df_excel['diff_probaL4'] = ( df_excel['probaL4'] - df_excel['probaAvgL']  ) 
+        df_excel['diff_probaL5'] = ( df_excel['probaL5'] - df_excel['probaAvgL']  ) 
+        
+        #shall we hanlde it differently?
         df_excel = df_excel.loc[ df_excel['probaAvgW'].notnull(),:]
         df_excel = df_excel.loc[ df_excel['probaAvgL'].notnull(),:]
 
-#        cols_to_drop = ['B365W', 'EXW', 'LBW','PSW','SJW','B365L', 'EXL', 'LBL','PSL','SJL']
-#        df_excel = preProcessData( df_excel, cols_to_drop, [], [] )
 
         return df_excel
 
@@ -371,7 +390,6 @@ class cHistTennisData(cHistData):
                                    'W4' : 'player1_4',
                                    'W5' : 'player1_5',
                                    'probaAvgL' : 'player2_probaAvg',
-                                   'probaAvgL_corrected' : 'player2_probaAvg_corrected',
                                    'probaL1' : 'player2_proba1',
                                    'probaL2' : 'player2_proba2',
                                    'probaL3' : 'player2_proba3',
@@ -379,13 +397,22 @@ class cHistTennisData(cHistData):
                                    'probaL5' : 'player2_proba5',
                                    'probaMaxL' : 'player2_probaMax',
                                    'probaAvgW' : 'player1_probaAvg',
-                                   'probaAvgW_corrected' : 'player1_probaAvg_corrected',
                                    'probaW1' : 'player1_proba1',
                                    'probaW2' : 'player1_proba2',
                                    'probaW3' : 'player1_proba3',
                                    'probaW4' : 'player1_proba4',
                                    'probaW5' : 'player1_proba5',
-                                   'probaMaxW' : 'player1_probaMax'
+                                   'probaMaxW' : 'player1_probaMax',
+                                   'diff_probaW1' : 'player1_diffProba1',
+                                   'diff_probaW2' : 'player1_diffProba2',
+                                   'diff_probaW3' : 'player1_diffProba3',
+                                   'diff_probaW4' : 'player1_diffProba4',
+                                   'diff_probaW5' : 'player1_diffProba5',
+                                   'diff_probaL1' : 'player2_diffProba1',
+                                   'diff_probaL2' : 'player2_diffProba2',
+                                   'diff_probaL3' : 'player2_diffProba3',
+                                   'diff_probaL4' : 'player2_diffProba4',
+                                   'diff_probaL5' : 'player2_diffProba5'
                                    },
                                     inplace=True)       
         
@@ -415,7 +442,6 @@ class cHistTennisData(cHistData):
                                    'player2_4' : 'player1_4',
                                    'player2_5' : 'player1_5',
                                    'player1_probaAvg' : 'player2_probaAvg',
-                                   'player1_probaAvg_corrected' : 'player2_probaAvg_corrected',
                                    'player1_proba1' : 'player2_proba1',
                                    'player1_proba2' : 'player2_proba2',
                                    'player1_proba3' : 'player2_proba3',
@@ -423,13 +449,22 @@ class cHistTennisData(cHistData):
                                    'player1_proba5' : 'player2_proba5',
                                    'player1_probaMax' : 'player2_probaMax',                                   
                                    'player2_probaAvg' : 'player1_probaAvg',
-                                   'player2_probaAvg_corrected' : 'player1_probaAvg_corrected',
                                    'player2_proba1' : 'player1_proba1',
                                    'player2_proba2' : 'player1_proba2',
                                    'player2_proba3' : 'player1_proba3',
                                    'player2_proba4' : 'player1_proba4',
                                    'player2_proba5' : 'player1_proba5',
-                                   'player2_probaMax' : 'player1_probaMax'
+                                   'player2_probaMax' : 'player1_probaMax',
+                                   'player2_diffProba1' : 'player1_diffProba1',
+                                   'player2_diffProba2' : 'player1_diffProba2',
+                                   'player2_diffProba3' : 'player1_diffProba3',
+                                   'player2_diffProba4' : 'player1_diffProba4',
+                                   'player2_diffProba5' : 'player1_diffProba5',
+                                   'player1_diffProba1' : 'player2_diffProba1',
+                                   'player1_diffProba2' : 'player2_diffProba2',
+                                   'player1_diffProba3' : 'player2_diffProba3',
+                                   'player1_diffProba4' : 'player2_diffProba4',
+                                   'player1_diffProba5' : 'player2_diffProba5'                                   
                                    }
         
 #        self._data = duplicateRows( self._data, cols=self._cols_to_duplicate )
@@ -457,16 +492,14 @@ class cHistTennisData(cHistData):
                                'player2_3',
                                'player2_4',
                                'player2_5',
-                               'player1_probaAvg',
-                               'player1_probaAvg_corrected',
-#                               'player1_proba1',
-#                               'player1_proba2',
-#                               'player1_proba3',
-#                               'player1_proba4',
-#                               'player1_proba5',
+#                               'player1_probaAvg',
+                               'player1_proba1',
+                               'player1_proba2',
+                               'player1_proba3',
+                               'player1_proba4',
+                               'player1_proba5',
                                'player1_probaMax',                                   
                                'player2_probaAvg',
-                               'player2_probaAvg_corrected',
                                'player2_proba1',
                                'player2_proba2',
                                'player2_proba3',
@@ -483,6 +516,21 @@ class cHistTennisData(cHistData):
                                'Round',
                                'Surface',
                                'Tournament',
+#                               'player1_diffProba1',
+#                               'player1_diffProba2',
+#                               'player1_diffProba3',
+#                               'player1_diffProba4',
+#                               'player1_diffProba5',
+                               'player2_diffProba1',
+                               'player2_diffProba2',
+                               'player2_diffProba3',
+                               'player2_diffProba4',
+                               'player2_diffProba5'#,
+#                               'spread_proba1',
+#                               'spread_proba2',
+#                               'spread_proba3',
+#                               'spread_proba4',
+#                               'spread_proba5'
                                ]
 
 #        self._data = preProcessData( self._data, self._cols_to_drop, [], [] )
@@ -661,8 +709,8 @@ def duplicateRows( df, cols ):
     df = pd.concat([df,df_duplicate], axis=0, ignore_index=True )
     return df
 
-##do a function to arrange the shape of the score
-#
+###do a function to arrange the shape of the score
+##
 #try:
 #    importExcel = True
 #    importGit = False

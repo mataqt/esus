@@ -28,4 +28,3 @@ def dateVec( startDate, endDate, freqDays ):
     while currentDate <= endDate:
         yield currentDate
         currentDate += freqDays
-    

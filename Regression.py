@@ -102,8 +102,17 @@ class cRegression:
     #private
     #boolean: shall we standardize the value
     def _doStandardize(self):
-        return self._center or self._reduce
+        return ( self._center or self._reduce ) and len( self._colsToStandardize ) > 0
     
+    #private
+    #boolean: shall we transform categorical values
+    def _doTransformCategorical(self):
+        return self._transformCategorical and len( self._categoricalCols ) > 0
+    
+    #private
+    #boolean: shall we transform categorical values
+    def _doUseColsToPoly(self):
+        return self._usePolynomialFeature and len( self._colsToPoly )> 0    
     #private
     #return the standardize X
     def _calibStandardize(self, X):
@@ -153,12 +162,12 @@ class cRegression:
     #adjust the input
     def _adjustInput(self, X):
         XtoUse = X
-        if self._transformCategorical:
+        if self._doTransformCategorical():
             XtoUse[self._categoricalCols] = self._transformCatForCalib( XtoUse[self._categoricalCols])
         if self._adjustNaN:
             XtoUse = self._removeNaN( XtoUse )
         
-        if self._usePolynomialFeature:
+        if self._doUseColsToPoly():
             Xpoly = self._polynomialTransform( XtoUse[:,self._colsToPoly] )
             if self._doStandardize():
                 Xpoly = self._calibStandardize( Xpoly )
@@ -178,10 +187,10 @@ class cRegression:
         if self._adjustNaN:
             XtoUse = self._imputer.transform( XtoUse )
 
-        if self._transformCategorical:
+        if self._doTransformCategorical():
              XtoUse[self._categoricalCols] = self._encoder.transform( XtoUse[self._categoricalCols]).toarray()
         
-        if self._usePolynomialFeature:
+        if self._doUseColsToPoly():
             Xpoly = self._poly.transform( XtoUse[:,self._colsToPoly] )
             if self._doStandardize():
                 Xpoly = self._scaler.transform( Xpoly )
@@ -375,13 +384,11 @@ class cLinearRegression_logit(cRegression):
         dual = False
         class_weight=None
         random_state=None
-#        tol=0.0001
-        tol=0.001
+        tol=0.0001
         C=1.0
         intercept_scaling=1
         class_weight = None
-        max_iter = 1000
-#        max_iter = 1000
+        max_iter = 50
         random_state=None
         verbose = 0
         self._model = linear_model.LogisticRegression(penalty, dual, tol, C, 
@@ -442,7 +449,7 @@ class cLinearRegression_logit(cRegression):
     #predict the results for a given X and a given class
     def _predict_class(self, X ):
         return self._model.predict_proba( X )
-#
+
 #try:
 ##    importOne = False
 ##    importGit = True
@@ -455,7 +462,7 @@ class cLinearRegression_logit(cRegression):
 ##    myRes.preProcessData( )
 ##    myRes.exportData( pathFileOut + 'temp' )
 #    n = 1000
-#    y = np.random.binomial( 1, 0.15, n)
+#    y = np.random.binomial( 1, 0.45, n)
 #    
 #    x =  np.random.rand( n, 10 )    
 #    regressor = cLinearRegression_logit( center = True,
@@ -476,11 +483,11 @@ class cLinearRegression_logit(cRegression):
 #    print( regressor._model.intercept_ )
 #    print( regressor._model.coef_ )
 #    print( 'results' )
-#    
+##    
 #    a =  np.random.rand( 1, 10 )
 #    res = regressor.predict( a )
 #    print( a )
-#    
+##    
 ##
 ##    print( len(y.shape) )
 #    print( 'Job done in cRegression' )

@@ -21,7 +21,7 @@ import numpy as np
 
 FUZZ = err.FUZZ
 
-basePath = "D:\IT\Library\Python\Data"
+basePath = "D:\IT\Library\Python\esus\Data"
 sportID = "Tennis"
 competitionID = "Dummy"
 repoPath = basePath + "\\" + sportID + "\\" + competitionID
@@ -85,54 +85,65 @@ class cHistTennisData(cHistData):
                 repoPath,
                 repoGitPath,
                 competitionID,
-                importOne = True,
+                importExcel = True,
                 importGit = True,
                 loadChallenge = False,
                 loadFuture = False,
                 doParseTime = False ):
         cHistData.__init__(self, useWeight = False )
         self._compettionID = competitionID
+        self._importExcel = importExcel
+        self._importGit = importGit
+        self._loadChallenge = loadChallenge
+        self._loadFuture = loadFuture
+        self._doParseTime = doParseTime
+        self._importDatas()
+        
+    #private
+    #import the datas and merge the dataframe
+    def _importDatas(self):
         df_excel = pd.DataFrame()
-        if importOne:
+        if self._importExcel:
             os.chdir( repoPath )
             for fileID in glob.glob("*.xls"):
                 df_excel = pd.concat([df_excel,self._loadData_excel( fileID )], axis=0, ignore_index=True )
             for fileID in glob.glob("*.xlsx"):
                 df_excel = pd.concat([df_excel,self._loadData_excel( fileID )], axis=0, ignore_index=True )
-            if importGit:                
+            if self._importGit:                
                 err.ERROR( 'The merge of the two data bases is not implemented yet ')
-                df_excel = self._renameIndex_excel( df_excel )
+#                df_excel = self._renameIndex_excel( df_excel )
             df_excel = self._computeProbas( df_excel )
       
 
-        if importGit:
-            if doParseTime:
+        if self._importGit:
+            if self._doParseTime:
                 df = Tennis.readATPMatchesParseTime( repoGitPath )
             else:
                 df = Tennis.readATPMatches( repoGitPath )
             self._data = pd.concat([self._data,df], axis=0, ignore_index=True )
-            if loadChallenge:
-                if doParseTime:
+            if self._loadChallenge:
+                if self._doParseTime:
                     df = Tennis.readChall_QATPMatchesParseTime( repoGitPath )
                 else:
                     df = Tennis.readChall_QATPMatches( repoGitPath )
                 self._data = pd.concat([self._data,df], axis=0, ignore_index=True )
-            if loadFuture:
-                if doParseTime:
+            if self._loadFuture:
+                if self._doParseTime:
                     df = Tennis.readFMatchesParseTime( repoGitPath )
                 else:
                     df = Tennis.readFMatches( repoGitPath )
                 self._data = pd.concat([self._data,df], axis=0, ignore_index=True )
-            if importOne:
+            if self._importExcel:
                 err.ERROR( 'The merge of the two data bases is not implemented yet ')
-                self._renameIndex_git()
+#                self._renameIndex_git()
             self._adjustTimeVec()
-            self._preProcessData_init()
-            self._lastDate = -1 #use in extractData for performance
-            self._data_lastDate = None #use in extractData for performance
+            self._prepareIndicesGit()
             
-        if importOne:
+        if self._importExcel:
             self._data = df_excel
+            self._prepareIndicesExcel()
+            
+
         
     #private
     #we adjust the time vec here
@@ -239,13 +250,12 @@ class cHistTennisData(cHistData):
     #private
     # compute the probas ad adjustment
     def _computeProbas( self, df_excel ):
-        cols = ['B365W', 'EXW', 'LBW','PSW', 'SJW', 'UBW']
+        cols = ['B365W', 'EXW', 'LBW','PSW','SJW']
         probasW = 1.0 / df_excel[cols].astype('float64')
         maxW = probasW.min( axis = 1, skipna = True )
         averageW = probasW.mean( axis = 1, skipna = True )
 
-        
-        cols = ['B365L', 'EXL', 'LBL','PSL', 'SJL', 'UBL']
+        cols = ['B365L', 'EXL', 'LBL','PSL','SJL']
         probasL = 1.0 / df_excel[cols].astype('float64')
         maxL = probasL.min( axis = 1, skipna = True )
         averageL = probasL.mean( axis = 1, skipna = True )
@@ -254,9 +264,9 @@ class cHistTennisData(cHistData):
         averageL_corrected = averageL - spreadCorrection
         averageW_corrected = averageW - spreadCorrection
         
-        cols = ['probaW1', 'probaW2', 'probaW3','probaW4', 'probaW5', 'probaW6']
+        cols = ['probaW1', 'probaW2', 'probaW3','probaW4','probaW5']
         df_excel[cols] = probasW
-        cols = ['probaL1', 'probaL2', 'probaL3','probaL4', 'probaL5', 'probaL6']
+        cols = ['probaL1', 'probaL2', 'probaL3','probaL4','probaL5']
         df_excel[cols] = probasL
                 
         df_excel['probaMaxW'] = maxW
@@ -269,6 +279,9 @@ class cHistTennisData(cHistData):
  
         df_excel = df_excel.loc[ df_excel['probaAvgW'].notnull(),:]
         df_excel = df_excel.loc[ df_excel['probaAvgL'].notnull(),:]
+
+#        cols_to_drop = ['B365W', 'EXW', 'LBW','PSW','SJW','B365L', 'EXL', 'LBL','PSL','SJL']
+#        df_excel = preProcessData( df_excel, cols_to_drop, [], [] )
 
         return df_excel
 
@@ -321,7 +334,10 @@ class cHistTennisData(cHistData):
     #public
     #return the score (aka. y) column ID       
     def getTimeColumnID(self):
-        return 'tourney_date'
+        if self._importGit:
+            return 'tourney_date'
+        elif self._importExcel:
+            return 'Date'
      
     #public
     #return the score (aka. y) column ID  
@@ -329,147 +345,290 @@ class cHistTennisData(cHistData):
         return 'Winner'
 
     #public
-    #preprocess data (dummies, drop). Standardisation is done at a later stage
-    def _preProcessData_init( self ):
-        # add game id
-        #tourney_id and match nul could be use to create a gameid
-        #treat davis cup 
-        #remove extreme datas
-        #handle nan values
-        #regression logistic, scale and sparse data
-        #• svd, pca, kernel pca
-#        supprot vector machines
-#        generating polynomial features
-#add average to date, nb latch atp etc..., best rank ever. ratio de victoire 
-#number minutes played during the tournament
-#some datas are empty for a reason and should be prefill
+    #rename data (dummies, drop).
+    def _prepareIndicesExcel( self ):
+        
+        self._data.rename(columns={'Winner': 'player1_name',
+                                   'Loser': 'player2_name',
+                                   'AvgL' : 'player2_Avg',
+                                   'AvgW' : 'player1_Avg',
+                                   'LPts' : 'player2_pts',
+                                   'WPts' : 'player1_pts',
+                                   'LRank' : 'player2_Rank',
+                                   'WRank' : 'player1_Rank',
+                                   'Lsets' : 'player2_Sets',
+                                   'Wsets' : 'player1_Sets',
+                                   'MaxL' : 'player2_Max',
+                                   'MaxW' : 'player1_Max',
+                                   'L1' : 'player2_1',
+                                   'L2' : 'player2_2',
+                                   'L3' : 'player2_3',
+                                   'L4' : 'player2_4',
+                                   'L5' : 'player2_5',
+                                   'W1' : 'player1_1',
+                                   'W2' : 'player1_2',
+                                   'W3' : 'player1_3',
+                                   'W4' : 'player1_4',
+                                   'W5' : 'player1_5',
+                                   'probaAvgL' : 'player2_probaAvg',
+                                   'probaAvgL_corrected' : 'player2_probaAvg_corrected',
+                                   'probaL1' : 'player2_proba1',
+                                   'probaL2' : 'player2_proba2',
+                                   'probaL3' : 'player2_proba3',
+                                   'probaL4' : 'player2_proba4',
+                                   'probaL5' : 'player2_proba5',
+                                   'probaMaxL' : 'player2_probaMax',
+                                   'probaAvgW' : 'player1_probaAvg',
+                                   'probaAvgW_corrected' : 'player1_probaAvg_corrected',
+                                   'probaW1' : 'player1_proba1',
+                                   'probaW2' : 'player1_proba2',
+                                   'probaW3' : 'player1_proba3',
+                                   'probaW4' : 'player1_proba4',
+                                   'probaW5' : 'player1_proba5',
+                                   'probaMaxW' : 'player1_probaMax'
+                                   },
+                                    inplace=True)       
+        
+        self._data['Winner'] = self._data['player1_name']
 
-#add the drop last dummies to avoid redundancy
 
+        self._cols_to_duplicate = {'player2_name': 'player1_name',
+                                   'player1_name': 'player2_name',
+                                   'player1_Avg' : 'player2_Avg',
+                                   'player2_Avg' : 'player1_Avg',
+                                   'player1_pts' : 'player2_pts',
+                                   'player2_pts' : 'player1_pts',
+                                   'player1_Rank' : 'player2_Rank',
+                                   'player2_Rank' : 'player1_Rank',
+                                   'player1_Sets' : 'player2_Sets',
+                                   'player2_Sets' : 'player1_Sets',
+                                   'player1_Max' : 'player2_Max',
+                                   'player2_Max' : 'player1_Max',
+                                   'player1_1' : 'player2_1',
+                                   'player1_2' : 'player2_2',
+                                   'player1_3' : 'player2_3',
+                                   'player1_4' : 'player2_4',
+                                   'player1_5' : 'player2_5',
+                                   'player2_1' : 'player1_1',
+                                   'player2_2' : 'player1_2',
+                                   'player2_3' : 'player1_3',
+                                   'player2_4' : 'player1_4',
+                                   'player2_5' : 'player1_5',
+                                   'player1_probaAvg' : 'player2_probaAvg',
+                                   'player1_probaAvg_corrected' : 'player2_probaAvg_corrected',
+                                   'player1_proba1' : 'player2_proba1',
+                                   'player1_proba2' : 'player2_proba2',
+                                   'player1_proba3' : 'player2_proba3',
+                                   'player1_proba4' : 'player2_proba4',
+                                   'player1_proba5' : 'player2_proba5',
+                                   'player1_probaMax' : 'player2_probaMax',                                   
+                                   'player2_probaAvg' : 'player1_probaAvg',
+                                   'player2_probaAvg_corrected' : 'player1_probaAvg_corrected',
+                                   'player2_proba1' : 'player1_proba1',
+                                   'player2_proba2' : 'player1_proba2',
+                                   'player2_proba3' : 'player1_proba3',
+                                   'player2_proba4' : 'player1_proba4',
+                                   'player2_proba5' : 'player1_proba5',
+                                   'player2_probaMax' : 'player1_probaMax'
+                                   }
+        
+#        self._data = duplicateRows( self._data, cols=self._cols_to_duplicate )
+        
+        self._cols_to_drop = [ 'B365W', 'EXW', 'LBW','PSW','SJW','B365L', 'EXL', 'LBL','PSL','SJL',
+                                'player2_name',
+                               'player1_name',
+                               'player1_Avg',
+                               'player2_Avg',
+                               'player1_pts',
+                               'player2_pts',
+                               'player1_Rank',
+                               'player2_Rank',
+                               'player1_Sets',
+                               'player2_Sets',
+                               'player1_Max',
+                               'player2_Max',
+                               'player1_1',
+                               'player1_2',
+                               'player1_3',
+                               'player1_4',
+                               'player1_5',
+                               'player2_1',
+                               'player2_2',
+                               'player2_3',
+                               'player2_4',
+                               'player2_5',
+                               'player1_probaAvg',
+                               'player1_probaAvg_corrected',
+#                               'player1_proba1',
+#                               'player1_proba2',
+#                               'player1_proba3',
+#                               'player1_proba4',
+#                               'player1_proba5',
+                               'player1_probaMax',                                   
+                               'player2_probaAvg',
+                               'player2_probaAvg_corrected',
+                               'player2_proba1',
+                               'player2_proba2',
+                               'player2_proba3',
+                               'player2_proba4',
+                               'player2_proba5',
+                               'player2_probaMax',
+                               'ATP',
+                               'Best of',
+                               'Comment',
+                               'Court',
+                               'Date',
+                               'Location',
+                               'Series',
+                               'Round',
+                               'Surface',
+                               'Tournament',
+                               ]
 
+#        self._data = preProcessData( self._data, self._cols_to_drop, [], [] )
+#
+
+         
+    #public
+    #rename data (dummies, drop).
+    def _prepareIndicesGit( self ):
         self._data['Winner'] = self._data[ 'winner_name' ]
-        cols_to_drop = [ 'tourney_id', 'match_num', 'winner_id', 'loser_id',
-                            'score', 'minutes', 
-                            'w_df', 'w_svpt',
-                            'w_1stIn', 'w_1stWon', 'w_2ndWon', 'w_SvGms',
-                            'w_bpSaved', 'w_bpFaced', 
-                            'l_df', 'l_svpt',
-                            'l_1stIn', 'l_1stWon', 'l_2ndWon', 'l_SvGms', 
-                            'l_bpSaved', 'l_bpFaced', 'w_ace', 'l_ace',
-                            'winner_seed', 'loser_seed',
-                            'winner_ht', 'loser_ht']
-
-        # wace l_ace
         self._data.rename(columns={'winner_name': 'player1_name',
                                    'winner_rank': 'player1_rank',
-#                                    'winner_seed': 'player1_seed',  
-                                    'winner_age': 'player1_age',
-                                    'winner_hand': 'player1_hand',
-                                    'winner_rank_points' : 'player1_rank_points',
-                                    'winner_ioc':'player1_ioc',
-#                                    'winner_ht':'player1_ht',
-                                    'winner_entry':'player1_entry',
-                                    'loser_name': 'player2_name',
-                                    'loser_rank': 'player2_rank',
-#                                    'loser_seed': 'player2_seed', 
-                                    'loser_age': 'player2_age',
-                                    'loser_hand': 'player2_hand',
-                                    'loser_rank_points' : 'player2_rank_points',
-                                    'loser_ioc':'player2_ioc',
-#                                    'loser_ht':'player2_ht',
-                                    'loser_entry':'player2_entry'},
+                                   'winner_seed': 'player1_seed',  
+                                   'winner_age': 'player1_age',
+                                   'winner_hand': 'player1_hand',
+                                   'winner_rank_points' : 'player1_rank_points',
+                                   'winner_ioc':'player1_ioc',
+                                   'winner_ht':'player1_ht',
+                                   'winner_entry':'player1_entry',
+                                   'w_1stIn' : 'player1_1stIn',
+                                   'w_1stWon' : 'player1_1stWon',
+                                   'w_2ndWon' : 'player1_2ndWon',
+                                   'w_SvGms' : 'player1_SvGms',
+                                   'w_ace' : 'player1_ace',
+                                   'w_bpFaced' : 'player1_bpFaced',
+                                   'w_bpSaved' : 'player1_bpSaved',
+                                   'w_df' : 'player1_df',
+                                   'w_svpt' : 'player1_svpt',
+                                   'winner_id' : 'player1_id',
+                                   'loser_name': 'player2_name',
+                                   'loser_rank': 'player2_rank',
+                                   'loser_seed': 'player2_seed', 
+                                   'loser_age': 'player2_age',
+                                   'loser_hand': 'player2_hand',
+                                   'loser_rank_points' : 'player2_rank_points',
+                                   'loser_ioc':'player2_ioc',
+                                   'loser_ht':'player2_ht',
+                                   'loser_entry':'player2_entry',
+                                   'l_1stIn' : 'player2_1stIn',
+                                   'l_1stWon' : 'player2_1stWon',
+                                   'l_2ndWon' : 'player2_2ndWon',
+                                   'l_SvGms' : 'player2_SvGms',
+                                   'l_ace' : 'player2_ace',
+                                   'l_bpFaced' : 'player2_bpFaced',
+                                   'l_bpSaved' : 'player2_bpSaved',
+                                   'l_df' : 'player2_df',
+                                   'l_svpt' : 'player2_svpt',
+                                   'loser_id' : 'player2_id'
+                                   },
                                     inplace=True)
-
-
-        cols_to_dummies_and_drop = []
-        cols_to_dummies_init = []
         self._data.loc[self._data['tourney_name'].str.startswith('Davis Cup') , 'tourney_name' ] = 'Davis Cup'
-        self._data = preProcessData( self._data, cols_to_drop, cols_to_dummies_init, cols_to_dummies_and_drop)
-               
-        self._cols_to_dummies_and_drop = [ 'player2_name', 'tourney_name','surface',
-                                           'tourney_level', 'best_of', 'round', 'draw_size',
-                                           'player1_hand', 'player2_hand', 'player1_ioc', 'player2_ioc',
-                                           'player1_entry', 'player2_entry']  
-        self._cols_to_switch = [ ['player1_rank', 'player2_rank'],
-#                                 ['player1_seed', 'player2_seed'],
-                                 ['player1_age', 'player2_age'],
-                                 ['player1_hand', 'player2_hand'],
-                                 ['player1_rank_points', 'player2_rank_points'],
-                                 ['player1_ioc', 'player2_ioc'],
-#                                 ['player1_ht', 'player2_ht']
-                                 ]
-        self._cols_to_switch_indexcol = [['player1_name', 'player2_name' ]]
+#        scoreId = self.getScoreColumnID()
+#        self._data.loc[self._data[scoreId] != self._data['player1_name'], scoreId ] = 0
+#        self._data.loc[self._data[scoreId] == self._data['player1_name'], scoreId ] = 1
+
+        self._cols_to_duplicate = { 'player2_name': 'player1_name',
+                                   'player2_rank': 'player1_rank',
+                                   'player2_seed': 'player1_seed',  
+                                   'player2_age': 'player1_age',
+                                   'player2_hand': 'player1_hand',
+                                   'player2_rank_points' : 'player1_rank_points',
+                                   'player2_ioc':'player1_ioc',
+                                   'player2_ht':'player1_ht',
+                                   'player2_entry':'player1_entry',
+                                   'player2_1stIn' : 'player1_1stIn',
+                                   'player2_1stWon' : 'player1_1stWon',
+                                   'player2_2ndWon' : 'player1_2ndWon',
+                                   'player2_SvGms' : 'player1_SvGms',
+                                   'player2_ace' : 'player1_ace',
+                                   'player2_bpFaced' : 'player1_bpFaced',
+                                   'player2_bpSaved' : 'player1_bpSaved',
+                                   'player2_df' : 'player1_df',
+                                   'player2_svpt' : 'player1_svpt',
+                                   'player2_id' : 'player1_id',
+                                   'player1_name': 'player2_name',
+                                   'player1_rank': 'player2_rank',
+                                   'player1_seed': 'player2_seed', 
+                                   'player1_age': 'player2_age',
+                                   'player1_hand': 'player2_hand',
+                                   'player1_rank_points' : 'player2_rank_points',
+                                   'player1_ioc':'player2_ioc',
+                                   'player1_ht':'player2_ht',
+                                   'player1_entry':'player2_entry',
+                                   'player1_1stIn' : 'player2_1stIn',
+                                   'player1_1stWon' : 'player2_1stWon',
+                                   'player1_2ndWon' : 'player2_2ndWon',
+                                   'player1_SvGms' : 'player2_SvGms',
+                                   'player1_ace' : 'player2_ace',
+                                   'player1_bpFaced' : 'player2_bpFaced',
+                                   'player1_bpSaved' : 'player2_bpSaved',
+                                   'player1_df' : 'player2_df',
+                                   'player1_svpt' : 'player2_svpt',
+                                   'player1_id' : 'player2_id'
+                                   }
         
+#        self._data = duplicateRows( self._data, cols=self._cols_to_duplicate )
         
-        self._cols_to_standardize = ['player1_rank', 'player2_rank', 
-#                                     'player1_seed', 'player2_seed',
-                                     'player1_age', 'player2_age', 'player1_rank_points', 'player2_rank_points',
-#                                     'player1_ht', 'player2_ht'
-                                     ]
-    
-        
+        self._cols_to_drop = [ 'tourney_id', 'match_num', 'player1_id', 'player2_id',
+                            'score', 'minutes', 
+                            'tourney_name', 'tourney_level', 'round', 'tourney_date',
+                            'surface',
+                            'draw_size', 'best_of',
+                            'player1_df', 'player1_svpt',
+                            'player1_1stIn', 'player1_1stWon', 'player1_2ndWon', 'player1_SvGms',
+                            'player1_bpSaved', 'player1_bpFaced', 
+                            'player2_df', 'player2_svpt',
+                            'player2_1stIn', 'player2_1stWon', 'player2_2ndWon', 'player2_SvGms', 
+                            'player2_bpSaved', 'player2_bpFaced', 'player1_ace', 'player2_ace',
+                            'player1_seed', 'player2_seed',
+                            'player1_ht', 'player2_ht',
+                            'player2_entry', 'player1_entry', 
+                            'player1_ioc', 'player2_ioc',
+                            'player1_rank', 'player2_rank', 'player1_age', 'player2_age',
+                            'player1_rank_points', 'player2_rank_points',
+                            'player1_hand', 'player2_hand'
+                            ]
+
+
+#        self._data = preProcessData( self._data, self._cols_to_drop, [], [] )
+#
+
+         
      
     #public
     #get the datas before a given date and preProcess them
-    def extractPastData( self, date, playerID, player2_ID, doDummies = True, minSample = 30 ):
+    def extractPastData( self, date, player1_ID, player2_ID ):
         timeColumnID = self.getTimeColumnID()
-        #no need to reload the data is still the same dates
-        if self._lastDate != date:
-            self._lastDate = date
-            self._data_lastDate = self._data.loc[self._data[timeColumnID] <= date,:]
-
         scoreId = self.getScoreColumnID()
-        df_player = self._data_lastDate[(self._data_lastDate['player1_name'] == playerID) | (self._data_lastDate['player2_name'] == playerID) ]
-        err.REQUIRE( df_player.shape[0] > 0, 'No value for the player ' + playerID + ' in the database' )
         
         #need a copy to avoid perf and memoru issues
-        df_player = pd.DataFrame( df_player )
-        df_player.loc[df_player[scoreId] != playerID, scoreId ] = 0
-        df_player.loc[df_player[scoreId] == playerID, scoreId ] = 1
-        self._switchData(df_player, playerID)
-        
-        categoricalColsIndex=[]
-        colToStandardizeIndex=[]
-        if doDummies:
-            df_player = preProcessData( df_player, 
-                                cols_to_drop = [], 
-                                cols_to_dummies = [],
-                                cols_to_dummies_and_drop = self._cols_to_dummies_and_drop )
-        else:
-            categoricalColsIndex = [df_player.columns.get_loc('player2_name' )]
-        #we drop the const values
-        if df_player.shape[0] >= minSample:
-            df_player = df_player.loc[:,df_player.apply(pd.Series.nunique) != 1]
-        
-        #the results 
-        x_player = df_player.loc[df_player[timeColumnID] == date,:]
-        df_player = df_player.loc[df_player[timeColumnID] < date,:]
-        time = df_player[timeColumnID]
-        df_player.drop( [timeColumnID], axis = 1, inplace = True)
-        x_player.drop( [timeColumnID], axis = 1, inplace = True)
-        if x_player.shape[0] > 1: #several games the same day
-            x_player = x_player.loc[x_player[player2_ID] == 1,:]
-                         
-        #we intersect the columns, to avoid those which have been dropped (const cols)
-        colToStandardize_local = pd.Series(list(set(self._cols_to_standardize) & set(df_player.columns)))
-        colToStandardizeIndex = [df_player.columns.drop(scoreId).get_loc(col) for col in colToStandardize_local ]
-        
-        return { 'df':df_player, 'X': x_player, 'Time': time,
-                'CategoricalIndex' : categoricalColsIndex,
-                'ColToStandardize' : colToStandardizeIndex }
+        df_date = pd.DataFrame( self._data.loc[self._data[timeColumnID] < date,:] )
+        df_date = duplicateRows( df_date, cols=self._cols_to_duplicate )
+        df_date.loc[df_date[scoreId] != df_date['player1_name'], scoreId ] = 0
+        df_date.loc[df_date[scoreId] == df_date['player1_name'], scoreId ] = 1  
+        df_date = preProcessData( df_date, self._cols_to_drop, [], [] )
+        df_date.to_csv(pathFileOut  +' _dfDate', sep = ",", header=True, index=False, encoding='utf-8')
 
-    #private
-    #switch the column such that all the player1 data are those we want to regress
-    def _switchData(self, df, playerID):
-        for cols in self._cols_to_switch:
-            col2 = cols[1]
-            col1 = cols[0]
-            df.loc[df['player2_name'] == playerID, [col1, col2]] = df.loc[df['player2_name']  == playerID, [col2, col1]].values
-        for cols in self._cols_to_switch_indexcol:
-            col2 = cols[1]
-            col1 = cols[0]
-            df.loc[df['player2_name'] == playerID, [col1, col2]] = df.loc[df['player2_name']  == playerID, [col2, col1]].values
-            
+
+        x_game = pd.DataFrame( self._data.loc[self._data[timeColumnID] == date,:] )
+        x_game  = x_game.loc[ (x_game['player1_name'] == player1_ID) & (x_game['player2_name'] == player2_ID) ]
+        x_game = preProcessData( x_game, self._cols_to_drop, [], [] )
+        x_game.to_csv(pathFileOut  +' _x_game', sep = ",", header=True, index=False, encoding='utf-8')
+
+        return { 'df':df_date, 'X': x_game }
+
+
 
 #generic function used to prepocess datas (drop, dummies etc)
 def preProcessData( df, cols_to_drop, cols_to_dummies, cols_to_dummies_and_drop ):
@@ -479,9 +638,6 @@ def preProcessData( df, cols_to_drop, cols_to_dummies, cols_to_dummies_and_drop 
     #column is removed from based df
     for col in cols_to_dummies_and_drop:
         df_with_dummies = pd.get_dummies( df[ col ] )
-#        err.ERROR( 'modify this' )
-#        lastCol = len( df_with_dummies.columns ) - 1
-#        df_with_dummies.drop( df_with_dummies.columns[lastCol], axis = 1, inplace = True )
         newDf = pd.concat([newDf,df_with_dummies], axis=1 )
         df.drop( col, axis = 1, inplace = True )
     
@@ -496,17 +652,26 @@ def preProcessData( df, cols_to_drop, cols_to_dummies, cols_to_dummies_and_drop 
     
     return df
 
+#Generic fuunction
+#input a pandas dataframe. 
+#return a DF where the row have been duplicated and some cols have been inversed
+def duplicateRows( df, cols ):
+    df_duplicate = df.copy( True )
+    df_duplicate.rename(columns=cols, inplace=True)
+    df = pd.concat([df,df_duplicate], axis=0, ignore_index=True )
+    return df
+
 ##do a function to arrange the shape of the score
 #
-try:
-    importOne = True
-    importGit = False
-    loadChallenge = False
-    loadFutures = False
-    doParseTime = False
-    myRes = cHistTennisData( repoPath, repoGitPath, competitionID, importOne,
-                        importGit, loadChallenge, loadFutures, doParseTime )
-    myRes.exportData( pathFileOut )
-    print('Job done' )
-except err.cError as e:
-    print( 'An error occured:', e.value )
+#try:
+#    importExcel = True
+#    importGit = False
+#    loadChallenge = False
+#    loadFutures = False
+#    doParseTime = False
+#    myRes = cHistTennisData( repoPath, repoGitPath, competitionID, importExcel,
+#                        importGit, loadChallenge, loadFutures, doParseTime )
+#    myRes.exportData( pathFileOut )
+#    print('Job done' )
+#except err.cError as e:
+#    print( 'An error occured:', e.value )

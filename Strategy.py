@@ -21,7 +21,7 @@ import pandas as pd
 import time
 FUZZ = err.FUZZ
 
-basePath = "D:\IT\Library\Python\Data"
+basePath = "D:\IT\Library\Python\esus\Data"
 sportID = "Tennis"
 competitionID = "Dummy"
 repoPath = basePath + "\\" + sportID + "\\" + competitionID
@@ -32,8 +32,8 @@ repoGitPath = basePath + "\\" + sportID + "\\" +  "Dummy"
 class cStrategy:
     #class used to apply a betting strategy
 
-    #the histData on which we perfor the strategy
-    #strategyName: (str) the nale of the strategy, will be enhanced at a later stage
+    #the histData on which we perform the strategy
+    #strategyName: (str) the name of the strategy, will be enhanced at a later stage
     #startDate, endDate: the period on which we perfor the strategy
     #weightParam: a weight param object
     # n_cpu: number of cpu the code can use. If -1, it will use the max number.
@@ -58,9 +58,9 @@ class cStrategy:
                                                          reduce = True,
                                                          normalize = False,
                                                          fit_intercept = True,
-                                                         n_cpu = -1, 
+                                                         n_cpu = 1, 
                                                          penalty = 'l2', 
-                                                         smart_guess = True,
+                                                         smart_guess = False,
                                                          multi_class = 'ovr' )
         else:
             err.ERROR( 'cStrategy not implemented for ' + self._modelType )
@@ -81,321 +81,65 @@ class cStrategy:
     def _generateProbas(self):
         timeColumnID = self._histData.getTimeColumnID()
         
-        regressor_base = reg.cLinearRegression_logit( center = False,
-                                 reduce = False,
-                                 normalize = False,
-                                 fit_intercept = True,
-                                 colsToStandardize = [],
-                                 transformCategorical = False,
-                                 categoricalCols = [],
-                                 n_cpu = -1, 
-                                 penalty = 'l2', 
-                                 smart_guess = False,
-                                 multi_class = 'ovr',
-                                 adjustNaN = True,
-                                 dimReduc = None,
-                                 nDimReduc = -1,
-                                 ruleOfTen = False,
-                                 usePolynomialFeature = False,
-                                 nPolynomialDegree = 2,
-                                 colsToPoly = [])
-        
-        regressor_stand = reg.cLinearRegression_logit( center = True,
-                                 reduce = True,
-                                 normalize = False,
-                                 fit_intercept = True,
-                                 colsToStandardize = [],
-                                 transformCategorical = False,
-                                 categoricalCols = [],
-                                 n_cpu = -1, 
-                                 penalty = 'l2', 
-                                 smart_guess = False,
-                                 multi_class = 'ovr',
-                                 adjustNaN = True,
-                                 dimReduc = None,
-                                 nDimReduc = -1,
-                                 ruleOfTen = False,
-                                 usePolynomialFeature = False,
-                                 nPolynomialDegree = 2,
-                                 colsToPoly = [])
-        
-        regressor_base_dimReduc_trunc = reg.cLinearRegression_logit( center = False,
-                                 reduce = False,
-                                 normalize = False,
-                                 fit_intercept = True,
-                                 colsToStandardize = [],
-                                 transformCategorical = False,
-                                 categoricalCols = [],
-                                 n_cpu = -1, 
-                                 penalty = 'l2', 
-                                 smart_guess = False,
-                                 multi_class = 'ovr',
-                                 adjustNaN = True,
-                                 dimReduc = 'TruncSVD',
-                                 nDimReduc = 15,
-                                 ruleOfTen = False,
-                                 usePolynomialFeature = False,
-                                 nPolynomialDegree = 2,
-                                 colsToPoly = [])
-        
-        regressor_stand_dimReduc_trunc = reg.cLinearRegression_logit( center = True,
-                                 reduce = True,
-                                 normalize = False,
-                                 fit_intercept = True,
-                                 colsToStandardize = [],
-                                 transformCategorical = False,
-                                 categoricalCols = [],
-                                 n_cpu = -1, 
-                                 penalty = 'l2', 
-                                 smart_guess = False,
-                                 multi_class = 'ovr',
-                                 adjustNaN = True,
-                                 dimReduc = 'TruncSVD',
-                                 nDimReduc = 15,
-                                 ruleOfTen = False,
-                                 usePolynomialFeature = False,
-                                 nPolynomialDegree = 2,
-                                 colsToPoly = [])
-        
-        regressor_base_dimReduc_PCA = reg.cLinearRegression_logit( center = False,
-                         reduce = False,
-                         normalize = False,
-                         fit_intercept = True,
-                         colsToStandardize = [],
-                         transformCategorical = False,
-                         categoricalCols = [],
-                         n_cpu = -1, 
-                         penalty = 'l2', 
-                         smart_guess = False,
-                         multi_class = 'ovr',
-                         adjustNaN = True,
-                         dimReduc = 'PCA',
-                         nDimReduc = 15,
-                         ruleOfTen = False,
-                         usePolynomialFeature = False,
-                         nPolynomialDegree = 2,
-                         colsToPoly = [])
-        
-        regressor_stand_dimReduc_PCA = reg.cLinearRegression_logit( center = True,
-                                 reduce = True,
-                                 normalize = False,
-                                 fit_intercept = True,
-                                 colsToStandardize = [],
-                                 transformCategorical = False,
-                                 categoricalCols = [],
-                                 n_cpu = -1, 
-                                 penalty = 'l2', 
-                                 smart_guess = False,
-                                 multi_class = 'ovr',
-                                 adjustNaN = True,
-                                 dimReduc = 'PCA',
-                                 nDimReduc = 15,
-                                 ruleOfTen = False,
-                                 usePolynomialFeature = False,
-                                 nPolynomialDegree = 2,
-                                 colsToPoly = [])
 
-        regressor_base_dimReduc_trunc_ruleOfTen = reg.cLinearRegression_logit( center = False,
-                                 reduce = False,
-                                 normalize = False,
-                                 fit_intercept = True,
-                                 colsToStandardize = [],
-                                 transformCategorical = False,
-                                 categoricalCols = [],
-                                 n_cpu = -1, 
-                                 penalty = 'l2', 
-                                 smart_guess = False,
-                                 multi_class = 'ovr',
-                                 adjustNaN = True,
-                                 dimReduc = 'TruncSVD',
-                                 nDimReduc = 15,
-                                 ruleOfTen = True,
-                                 usePolynomialFeature = False,
-                                 nPolynomialDegree = 2,
-                                 colsToPoly = [])
-        
-        regressor_stand_dimReduc_trunc_ruleOfTen = reg.cLinearRegression_logit( center = True,
-                                 reduce = True,
-                                 normalize = False,
-                                 fit_intercept = True,
-                                 colsToStandardize = [],
-                                 transformCategorical = False,
-                                 categoricalCols = [],
-                                 n_cpu = -1, 
-                                 penalty = 'l2', 
-                                 smart_guess = False,
-                                 multi_class = 'ovr',
-                                 adjustNaN = True,
-                                 dimReduc = 'TruncSVD',
-                                 nDimReduc = 15,
-                                 ruleOfTen = True,
-                                 usePolynomialFeature = False,
-                                 nPolynomialDegree = 2,
-                                 colsToPoly = [])
-        
-        regressor_base_dimReduc_PCA_ruleofTen = reg.cLinearRegression_logit( center = False,
-                                                 reduce = False,
-                                                 normalize = False,
-                                                 fit_intercept = True,
-                                                 colsToStandardize = [],
-                                                 transformCategorical = False,
-                                                 categoricalCols = [],
-                                                 n_cpu = -1, 
-                                                 penalty = 'l2', 
-                                                 smart_guess = False,
-                                                 multi_class = 'ovr',
-                                                 adjustNaN = True,
-                                                 dimReduc = 'PCA',
-                                                 nDimReduc = 15,
-                                                 ruleOfTen = True,
-                                                 usePolynomialFeature = False,
-                                                 nPolynomialDegree =2,
-                                                 colsToPoly = [])
-        
-        regressor_stand_dimReduc_PCA_ruleOfTen = reg.cLinearRegression_logit( center = True,
-                                 reduce = True,
-                                 normalize = False,
-                                 fit_intercept = True,
-                                 colsToStandardize = [],
-                                 transformCategorical = False,
-                                 categoricalCols = [],
-                                 n_cpu = -1, 
-                                 penalty = 'l2', 
-                                 smart_guess = False,
-                                 multi_class = 'ovr',
-                                 adjustNaN = True,
-                                 dimReduc = 'PCA',
-                                 nDimReduc = 15,
-                                 ruleOfTen = True,
-                                 usePolynomialFeature = False,
-                                 nPolynomialDegree = 2,
-                                 colsToPoly = [])
-        
-        regressorDict = { 'base':regressor_base, 
-                         'stand':regressor_stand, 
-                         'base_truncSVD_15':regressor_base_dimReduc_trunc,
-                         'stand_truncSVD_15':regressor_stand_dimReduc_trunc, 
-                         'base_PCA_15':regressor_base_dimReduc_PCA,
-                         'stand_PCA_15':regressor_stand_dimReduc_PCA,
-                         'base_trunc_ruleOfTen':regressor_base_dimReduc_trunc_ruleOfTen ,
-                         'stand_trunc_ruleofTen':regressor_stand_dimReduc_trunc_ruleOfTen, 
-                         'base_PCA_ruleOfTen':regressor_base_dimReduc_PCA_ruleofTen ,
-                         'stand_PCA_ruleofTen':regressor_stand_dimReduc_PCA_ruleOfTen }
-        
         myProb = {}
-        for key in regressorDict:
-            col1 = str(key) +'_p1'
-            col2 = str(key) +'_p2'
-            col3 = str(key) +'_score1'
-            col4 = str(key) +'_score2'
-            myProb[col1] = []
-            myProb[col2] = []
-            myProb[col3] = []
-            myProb[col4] = []
+        myProb['Date'] = []
+        myProb['player1_name'] = []
+        myProb['player_name'] = []
+        myProb['proba'] = []
+        myProb['proba_opposite'] = []
+        myProb['score'] = []
+        myProb['intercept'] = []
+        myProb['coef'] = []
+        myProb['nIter'] = []
         for date_i in MathUtils.dateVec(self._startDate, self._endDate, timedelta(days=1)):
-            myProb = self._generateProbas_date( date_i, timeColumnID, regressorDict, myProb )
+            myProb = self._generateProbas_date( date_i, timeColumnID, myProb )
        
-        
         aa = pathFileOut + '_probas'
-        bb = pathFileOut + '_sumUp'
-        myProbDf= pd.DataFrame()
-        for key in myProb:
-            myProbDf[key] = myProb[key]
+        myProbDf= pd.DataFrame.from_dict(myProb)
         myProbDf.to_csv(aa, sep = ",", header=True, index=False, encoding='utf-8')
-        
-        sumUp = pd.DataFrame()
-        for key in regressorDict:
-            col1 = str(key) +'_p1'
-            col2 = str(key) +'_p2'
-            col3 = str(key) +'_score1'
-            col4 = str(key) +'_score2'  
-            spread = np.subtract(myProb[col1], myProb[col2])
-            spread = np.abs(spread) 
 
-            mean = np.mean( spread )
-            maxVal = np.mean(spread)
-            stddev = np.std( spread )
-            
-            meanSc1 = np.mean( myProb[col3] )
-            maxValSc1 = np.mean(myProb[col3])
-            stddevSc1 = np.std( myProb[col3] )
-            
-            meanSc2 = np.mean( myProb[col4] )
-            maxValSc2 = np.mean(myProb[col4])
-            stddevSc2 = np.std( myProb[col4] )
-            
-            sumUp[key] = [mean, maxVal, stddev,
-                         meanSc1, maxValSc1, stddevSc1,
-                         meanSc2, maxValSc2, stddevSc2 ]
-
-        sumUp.to_csv(bb, sep = ",", header=True, index=False, encoding='utf-8') 
 
 #    
     #private
     #generate a table woth all the probas day by day.
     #probas for a given date
-    def _generateProbas_date(self, date_i, timeColumnID, regressorDict, myProb ):
+    def _generateProbas_date(self, date_i, timeColumnID, myProb ):
         baseData = self._histData.getData()
         
         #no game this day, we can skip
         df_date = baseData[baseData[timeColumnID] == date_i ]
         if df_date.shape[0] == 0:
             return myProb
-        print(   date_i )
+        print(  date_i )
 #        aa = pathFileOut + '_player1'
-#        bb = pathFileOut + '_player2'
+#        bb = pahFileOut + '_player2'
         scoreID = self._histData.getScoreColumnID()
-        minSample = 30
-        count = 0
-
-            
+#        count = 0
         for i, row in df_date.iterrows():
             player1_ID = row['player1_name']
             player2_ID = row['player2_name']
          
-#            tourneyId = row['tourney_name']
-#            if ' CH' in tourneyId or count > 0:
-#                continue
+            datas_date = self._histData.extractPastData( date_i , player1_ID, player2_ID )
 
-            
-            count = count + 1
-            print( count )
-
-            player1_data = self._histData.extractPastData( date_i , player1_ID, player2_ID, True, minSample )
-            player2_data = self._histData.extractPastData( date_i , player2_ID, player1_ID, True, minSample )
-            if player1_data['df'].shape[0] < minSample or player2_data['df'].shape[0] < minSample:
-                continue
-
-            for key, regressor in regressorDict.items():
-                res1 = self.getProbas_player( player1_data, regressor, scoreID, True )
-                res2 = self.getProbas_player( player2_data, regressor, scoreID, True )
-                p1 = res1['prob']
-                score1 = res1['score']
-                p2 = res2['prob']
-                score2 = res2['score']
-                col1 = str(key) +'_p1'
-                col2 = str(key) +'_p2'
-                col3 = str(key) +'_score1'
-                col4 = str(key) +'_score2'
-                myProb[col1].append( p1[0][0] )
-                myProb[col2].append( p2[0][1] )
-                myProb[col3].append( score1 )
-                myProb[col4].append( score2 )
-#            count += 1
-#            print( count )
-#            player1_data['df'].to_csv(aa, sep = ",", header=True, index=False, encoding='utf-8')
-#            player2_data['df'].to_csv(bb, sep = ",", header=True, index=False, encoding='utf-8') 
-#            a[1] = 10
+            res = self.getProbas_game( datas_date, self._regressor, scoreID )
+            myProb['Date'].append( date_i )
+            myProb['player1_name'].append( player1_ID )
+            myProb['player_name'].append( player2_ID )
+            myProb['proba'].append( res['proba'][0][0] )
+            myProb['proba_opposite'].append( res['proba'][0][1] )
+            myProb['score'].append( res['score'] )
+            myProb['intercept'].append( res['intercept'] )
+            myProb['coef'].append( res['coef'] )
+            myProb['nIter'].append( res['nIter'] )
         return myProb
 
-    def getProbas_player(self, playerData, regressor, scoreID, getScore ):
+    def getProbas_game(self, datas_date, regressor, scoreID ):
         #we read the data dictionary
-        df= playerData['df']
-        df_Today = playerData['X']
-        timeVec = playerData['Time']
-        categoricalIndex = playerData['CategoricalIndex']
-        colToStandardize = playerData['ColToStandardize']
-        regressor.setCatAnddStandardizeCols( colToStandardize, categoricalIndex, colToStandardize)
+        df = datas_date['df']
+        df_Today = datas_date['X']
+
+#        regressor.setCatAnddStandardizeCols( colToStandardize, categoricalIndex, colToStandardize)
         
         #we get the x and y
         cols = df.columns.drop( scoreID )
@@ -403,15 +147,13 @@ class cStrategy:
         length2= len( cols )
         y = df[scoreID].values.reshape( length )
         X = df[cols].values.reshape( length, length2 )
-        X_today = df_Today[cols].values.reshape( 1, length2 )  
+        X_game = df_Today[cols].values.reshape( 1, length2 )  
 
         #we run the regression
-        
-        score = 0
         regressor.calibrate(  X,  y )
-        if getScore:
-            score = regressor.getScore(X, y) 
-        return { 'prob': regressor.predict( X_today ), 'score':score }
+        return { 'proba': regressor.predict( X_game ), 'score':regressor.getScore(X, y) , 
+                'intercept' : regressor._model.intercept_ ,
+                'coef' : regressor._model.coef_, 'nIter': regressor._model.n_iter_ }
         
 class cWeightParam:
     #class used to generate the (time) weights of a regression
@@ -463,16 +205,16 @@ class cWeightParam:
 
     
 try:
-    startTime =time.time()
-    importOne = False
-    importGit = True
+    startTime = time.time()
+    importExcel = True
+    importGit = False
     loadChallenge = False
     loadFutures = False
     doParseTime = False
-    myHistData = hist.cHistTennisData( repoPath, repoGitPath, competitionID, importOne,
+    myHistData = hist.cHistTennisData( repoPath, repoGitPath, competitionID, importExcel,
                         importGit, loadChallenge, loadFutures, doParseTime )
 
-#    myHistData.exportData( pathFileOut )
+    myHistData.exportData( pathFileOut )
     
     myWeightParam = cWeightParam(useWeight = False,
                                  useTimeCutOff = False,
@@ -484,9 +226,9 @@ try:
                                  timeCutOff = 1.0 )
     modelType = 'logit'
     strategyName = 'dummy'    
-
-    startDate = datetime(2015, 1, 1)
-    endDate = datetime(2017, 1, 1)
+#
+    startDate = datetime(2018, 1, 11)
+    endDate = datetime(2018, 1, 11)
     
     myStrategy = cStrategy( myHistData,
                              modelType,
@@ -495,11 +237,15 @@ try:
                              endDate,
                              myWeightParam,              
                              n_cpu = -1 )
-
-
+#
+#
     myStrategy.runStrategy()
-#    myHistData.exportData( pathFileOut )
-    finalTime=time.time()-startTime
+#    
+    
+    
+    
+    finalTime = time.time() - startTime
+    print( 'finalTime: ' )
     print( finalTime )
     print( 'Job done in cStrategy' )
     

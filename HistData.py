@@ -252,12 +252,12 @@ class cHistTennisData(cHistData):
     def _computeProbas( self, df_excel ):
         cols = ['B365W', 'EXW', 'LBW','PSW','SJW']
         probasW = 1.0 / df_excel[cols].astype('float64')
-        maxW = probasW.min( axis = 1, skipna = True )
+        maxW = df_excel[cols].astype('float64').max( axis = 1, skipna = True )
         averageW = probasW.mean( axis = 1, skipna = True )
 
         cols = ['B365L', 'EXL', 'LBL','PSL','SJL']
         probasL = 1.0 / df_excel[cols].astype('float64')
-        maxL = probasL.min( axis = 1, skipna = True )
+        maxL = df_excel[cols].astype('float64').max( axis = 1, skipna = True )
         averageL = probasL.mean( axis = 1, skipna = True )
 
 #        spreadCorrection = ( ( averageL + averageW ) -1.0 ) / 2.0
@@ -279,8 +279,8 @@ class cHistTennisData(cHistData):
 
 
                 
-        df_excel['probaMaxW'] = maxW
-        df_excel['probaMaxL'] = maxL
+        df_excel['MaxQuoteW'] = maxW
+        df_excel['MaxQuoteL'] = maxL
                 
         df_excel['probaAvgW'] = averageW
         df_excel['probaAvgL'] = averageL
@@ -395,14 +395,14 @@ class cHistTennisData(cHistData):
                                    'probaL3' : 'player2_proba3',
                                    'probaL4' : 'player2_proba4',
                                    'probaL5' : 'player2_proba5',
-                                   'probaMaxL' : 'player2_probaMax',
+                                   'MaxQuoteL' : 'player2_MaxQuote',
                                    'probaAvgW' : 'player1_probaAvg',
                                    'probaW1' : 'player1_proba1',
                                    'probaW2' : 'player1_proba2',
                                    'probaW3' : 'player1_proba3',
                                    'probaW4' : 'player1_proba4',
                                    'probaW5' : 'player1_proba5',
-                                   'probaMaxW' : 'player1_probaMax',
+                                   'MaxQuoteW' : 'player1_MaxQuote',
                                    'diff_probaW1' : 'player1_diffProba1',
                                    'diff_probaW2' : 'player1_diffProba2',
                                    'diff_probaW3' : 'player1_diffProba3',
@@ -447,14 +447,14 @@ class cHistTennisData(cHistData):
                                    'player1_proba3' : 'player2_proba3',
                                    'player1_proba4' : 'player2_proba4',
                                    'player1_proba5' : 'player2_proba5',
-                                   'player1_probaMax' : 'player2_probaMax',                                   
+                                   'player1_MaxQuote' : 'player2_MaxQuote',                                   
                                    'player2_probaAvg' : 'player1_probaAvg',
                                    'player2_proba1' : 'player1_proba1',
                                    'player2_proba2' : 'player1_proba2',
                                    'player2_proba3' : 'player1_proba3',
                                    'player2_proba4' : 'player1_proba4',
                                    'player2_proba5' : 'player1_proba5',
-                                   'player2_probaMax' : 'player1_probaMax',
+                                   'player2_MaxQuote' : 'player1_MaxQuote',
                                    'player2_diffProba1' : 'player1_diffProba1',
                                    'player2_diffProba2' : 'player1_diffProba2',
                                    'player2_diffProba3' : 'player1_diffProba3',
@@ -469,7 +469,9 @@ class cHistTennisData(cHistData):
         
 #        self._data = duplicateRows( self._data, cols=self._cols_to_duplicate )
         
-        self._cols_to_drop = [ 'B365W', 'EXW', 'LBW','PSW','SJW','B365L', 'EXL', 'LBL','PSL','SJL',
+        self._cols_to_drop = [ 
+                                'B365W', 'EXW', 'LBW','PSW','SJW',
+                              'B365L', 'EXL', 'LBL','PSL','SJL',
                                 'player2_name',
                                'player1_name',
                                'player1_Avg',
@@ -498,14 +500,14 @@ class cHistTennisData(cHistData):
                                'player1_proba3',
                                'player1_proba4',
                                'player1_proba5',
-                               'player1_probaMax',                                   
+                               'player1_MaxQuote',                                   
                                'player2_probaAvg',
                                'player2_proba1',
                                'player2_proba2',
                                'player2_proba3',
                                'player2_proba4',
                                'player2_proba5',
-                               'player2_probaMax',
+                               'player2_MaxQuote',
                                'ATP',
                                'Best of',
                                'Comment',
@@ -671,10 +673,13 @@ class cHistTennisData(cHistData):
 
         x_game = pd.DataFrame( self._data.loc[self._data[timeColumnID] == date,:] )
         x_game  = x_game.loc[ (x_game['player1_name'] == player1_ID) & (x_game['player2_name'] == player2_ID) ]
+        maxQuote1 = float(x_game['player1_MaxQuote'])
+        maxQuote2 = float(x_game['player2_MaxQuote'])
         x_game = preProcessData( x_game, self._cols_to_drop, [], [] )
         x_game.to_csv(pathFileOut  +' _x_game', sep = ",", header=True, index=False, encoding='utf-8')
 
-        return { 'df':df_date, 'X': x_game }
+        return { 'df':df_date, 'X': x_game, 'player1_MaxQuote' : maxQuote1,
+                'player2_MaxQuote' : maxQuote2 }
 
 
 

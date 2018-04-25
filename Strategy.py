@@ -85,7 +85,9 @@ class cStrategy:
         myProb = {}
         myProb['Date'] = []
         myProb['player1_name'] = []
-        myProb['player_name'] = []
+        myProb['player2_name'] = []
+        myProb['player1_MaxQuote'] = []
+        myProb['player2_MaxQuote'] = []
         myProb['proba'] = []
         myProb['proba_opposite'] = []
         myProb['score'] = []
@@ -121,11 +123,15 @@ class cStrategy:
             player2_ID = row['player2_name']
          
             datas_date = self._histData.extractPastData( date_i , player1_ID, player2_ID )
+            
+#            print( datas_date )']
 
             res = self.getProbas_game( datas_date, self._regressor, scoreID )
             myProb['Date'].append( date_i )
             myProb['player1_name'].append( player1_ID )
-            myProb['player_name'].append( player2_ID )
+            myProb['player2_name'].append( player2_ID )
+            myProb['player1_MaxQuote'].append( datas_date['player1_MaxQuote'] )
+            myProb['player2_MaxQuote'].append( datas_date['player2_MaxQuote'] )
             myProb['proba'].append( res['proba'][0][0] )
             myProb['proba_opposite'].append( res['proba'][0][1] )
             myProb['score'].append( res['score'] )
@@ -228,7 +234,7 @@ try:
     strategyName = 'dummy'    
 #
     startDate = datetime(2018, 1, 11)
-    endDate = datetime(2018, 1, 25)
+    endDate = datetime(2018, 1, 11)
     
     myStrategy = cStrategy( myHistData,
                              modelType,

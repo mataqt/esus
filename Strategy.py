@@ -58,7 +58,7 @@ class cStrategy:
                                                          reduce = True,
                                                          normalize = False,
                                                          fit_intercept = True,
-                                                         n_cpu = 1, 
+                                                         n_cpu = -1, 
                                                          penalty = 'l2', 
                                                          smart_guess = False,
                                                          multi_class = 'ovr' )
@@ -86,14 +86,20 @@ class cStrategy:
         myProb['Date'] = []
         myProb['player1_name'] = []
         myProb['player2_name'] = []
+        myProb['Winner'] = []
+        myProb['score'] = []
+#        myProb['intercept'] = []
+#        myProb['coef'] = []
+#        myProb['nIter'] = []        
+        
         myProb['player1_MaxQuote'] = []
         myProb['player2_MaxQuote'] = []
         myProb['proba'] = []
         myProb['proba_opposite'] = []
-        myProb['score'] = []
-        myProb['intercept'] = []
-        myProb['coef'] = []
-        myProb['nIter'] = []
+        myProb['amount1'] = []
+        myProb['amount2'] = []
+        myProb['perf'] = []
+
         for date_i in MathUtils.dateVec(self._startDate, self._endDate, timedelta(days=1)):
             myProb = self._generateProbas_date( date_i, timeColumnID, myProb )
        
@@ -121,6 +127,7 @@ class cStrategy:
         for i, row in df_date.iterrows():
             player1_ID = row['player1_name']
             player2_ID = row['player2_name']
+            winner_ID = row['Winner']
          
             datas_date = self._histData.extractPastData( date_i , player1_ID, player2_ID )
             
@@ -130,14 +137,40 @@ class cStrategy:
             myProb['Date'].append( date_i )
             myProb['player1_name'].append( player1_ID )
             myProb['player2_name'].append( player2_ID )
-            myProb['player1_MaxQuote'].append( datas_date['player1_MaxQuote'] )
-            myProb['player2_MaxQuote'].append( datas_date['player2_MaxQuote'] )
-            myProb['proba'].append( res['proba'][0][0] )
-            myProb['proba_opposite'].append( res['proba'][0][1] )
+            myProb['Winner'].append( winner_ID )
             myProb['score'].append( res['score'] )
-            myProb['intercept'].append( res['intercept'] )
-            myProb['coef'].append( res['coef'] )
-            myProb['nIter'].append( res['nIter'] )
+#            myProb['intercept'].append( res['intercept'] )
+#            myProb['coef'].append( res['coef'] )
+#            myProb['nIter'].append( res['nIter'] )
+            
+            
+            #note: we should probably not use the maxQuote
+            player1_maxQuote = datas_date['player1_MaxQuote']
+            player2_maxQuote = datas_date['player2_MaxQuote']
+            proba = res['proba'][0][0]
+            proba_opposite = res['proba'][0][1]
+            
+            myProb['player1_MaxQuote'].append( player1_maxQuote )
+            myProb['player2_MaxQuote'].append( player2_maxQuote )
+            myProb['proba'].append( proba )
+            myProb['proba_opposite'].append( proba_opposite )
+            
+            betAmount = self.getProbas_amount( proba, proba_opposite, player1_maxQuote, player2_maxQuote )
+            amount1 = betAmount['amount1']
+            amount2 = betAmount['amount2']
+            
+            winner1 = 0.0
+            if winner_ID == player1_ID:
+                winner1 = 1.0
+            
+            perf = winner1 * amount1 * player1_maxQuote + (1.0 - winner1) * amount2 * player2_maxQuote
+            perf -= amount1
+            perf -= amount2
+     
+            myProb['amount1'].append( amount1 )
+            myProb['amount2'].append( amount2 )
+            myProb['perf'].append( perf )
+
         return myProb
 
     def getProbas_game(self, datas_date, regressor, scoreID ):
@@ -160,6 +193,30 @@ class cStrategy:
         return { 'proba': regressor.predict( X_game ), 'score':regressor.getScore(X, y) , 
                 'intercept' : regressor._model.intercept_ ,
                 'coef' : regressor._model.coef_, 'nIter': regressor._model.n_iter_ }
+
+    #private
+    #here, we apply the actual strategy        
+    def getProbas_amount(self, proba, proba_opposite, player1_maxQuote, player2_maxQuote ):
+        #we read the data dictionary
+        
+        amount1 = 0.0
+        amount2 = 0.0
+        cutOff = 0.0
+        hasAmount1 = False
+        hasAmount2 = False
+        
+        if proba * player1_maxQuote > 1.0 + cutOff:
+            amount1 = 1.0
+            hasAmount1 = True
+            
+        if proba_opposite* player2_maxQuote > 1.0 + cutOff:
+            amount2 = 1.0
+            hasAmount2 = True
+            
+        if hasAmount1 and hasAmount2:
+            err.ERROR( 'We cannot bet on player1 and player2 at the same time' )
+            
+        return { 'amount1': amount1, 'amount2': amount2 }
         
 class cWeightParam:
     #class used to generate the (time) weights of a regression
@@ -233,8 +290,8 @@ try:
     modelType = 'logit'
     strategyName = 'dummy'    
 #
-    startDate = datetime(2018, 1, 11)
-    endDate = datetime(2018, 1, 11)
+    startDate = datetime(2018, 1, 1)
+    endDate = datetime(2018, 1, 31 )
     
     myStrategy = cStrategy( myHistData,
                              modelType,
